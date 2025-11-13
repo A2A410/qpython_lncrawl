@@ -15,7 +15,9 @@ class Eight88NovelCrawler(Crawler):
     def search_novel(self, query):
         query = query.replace(" ", "+")
         soup = self.get_soup(
-            f"https://888novel.com/tim-kiem/?title={query}&he_liet=yes&status=all"
+            "https://888novel.com/tim-kiem/?title={}&he_liet=yes&status=all".format(
+                query
+            )
         )
 
         # The search result is paginated.
@@ -46,7 +48,9 @@ class Eight88NovelCrawler(Crawler):
                         "title": a.get("title"),
                         "url": a.get("href").strip(),
                         "info": self.cleaner.clean_text(
-                            f"Author{'s' if len(author)>1 else ''} : {', '.join(author)}"
+                            "Author{} : {}".format(
+                                "s" if len(author) > 1 else "", ", ".join(author)
+                            )
                         ),
                     }
                 )

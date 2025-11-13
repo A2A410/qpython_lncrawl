@@ -1,14 +1,10 @@
 from enum import Enum
-from typing import List, Optional
-
 from box import Box
 
-from .chapter import Chapter
-from .volume import Volume
 from ..assets.languages import language_codes
 
 
-class NovelStatus(str, Enum):
+class NovelStatus(Enum):
     unknown = "Unknown"
     ongoing = "Ongoing"
     completed = "Completed"
@@ -18,31 +14,31 @@ class NovelStatus(str, Enum):
 class Novel(Box):
     def __init__(
         self,
-        url: str,
-        title: str,
-        authors: List[str] = [],
-        cover_url: Optional[str] = None,
-        chapters: List[Chapter] = [],
-        volumes: List[Volume] = [],
-        is_rtl: Optional[bool] = None,
-        synopsis: Optional[str] = None,
-        language: Optional[str] = None,
-        novel_tags: List[str] = [],
-        has_manga: Optional[bool] = None,
-        has_mtl: Optional[bool] = None,
-        language_code: List[str] = [],
-        source: Optional[str] = None,
-        editors: List[str] = [],
-        translators: List[str] = [],
-        status: Optional[NovelStatus] = NovelStatus.unknown,
-        genres: List[str] = [],
-        tags: List[str] = [],
-        description: Optional[str] = None,
-        original_publisher: Optional[str] = None,
-        english_publisher: Optional[str] = None,
-        novelupdates_url: Optional[str] = None,
+        url,
+        title,
+        authors=[],
+        cover_url=None,
+        chapters=[],
+        volumes=[],
+        is_rtl=None,
+        synopsis=None,
+        language=None,
+        novel_tags=[],
+        has_manga=None,
+        has_mtl=None,
+        language_code=[],
+        source=None,
+        editors=[],
+        translators=[],
+        status=NovelStatus.unknown,
+        genres=[],
+        tags=[],
+        description=None,
+        original_publisher=None,
+        english_publisher=None,
+        novelupdates_url=None,
         **kwargs,
-    ) -> None:
+    ):
         self.url = url
         self.title = title
         self.authors = authors
@@ -69,5 +65,5 @@ class Novel(Box):
         self.update(kwargs)
 
     @property
-    def language(self) -> str:
+    def language(self):
         return language_codes.get(self.language_code, "Unknown")

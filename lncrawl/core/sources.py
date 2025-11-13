@@ -5,20 +5,16 @@ import logging
 import os
 import re
 import time
-from concurrent.futures import Future
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Type
 from urllib.parse import urlparse
 
 import requests
-from packaging import version
 
 from ..assets.version import get_version
 from ..assets.languages import language_codes
 from ..utils.platforms import Platform
 from .arguments import get_args
 from .crawler import Crawler
-from .display import new_version_news
 from .exeptions import LNException
 from .taskman import TaskManager
 
@@ -33,8 +29,8 @@ __all__ = [
 ]
 
 rejected_sources = {}
-template_list: Set[Type[Crawler]] = set()
-crawler_list: Dict[str, Type[Crawler]] = {}
+template_list = set()
+crawler_list = {}
 
 # --------------------------------------------------------------------------- #
 # Utilities
@@ -43,7 +39,7 @@ crawler_list: Dict[str, Type[Crawler]] = {}
 __executor = TaskManager()
 
 
-def __download_data(url: str):
+def __download_data(url):
     logger.debug("Downloading %s", url)
 
     if Platform.windows:
@@ -60,7 +56,7 @@ def __download_data(url: str):
         user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:90.0) Gecko/20100101 Firefox/90.0"
     else:
         referer = "http://updater.checker/others/" + get_version()
-        user_agent = f"lncrawl/{get_version()} ({Platform.name})"
+        user_agent = "lncrawl/{} ({})".format(get_version(), Platform.name)
 
     res = requests.get(
         url,
@@ -88,9 +84,6 @@ __local_data_path = Path(__file__).parent.parent.absolute()
 if not (__local_data_path / "sources").is_dir():
     __local_data_path = __local_data_path.parent
 
-__current_index = {}
-__latest_index = {}
-
 
 def __load_current_index():
     try:
@@ -102,61 +95,57 @@ def __load_current_index():
 
         logger.debug("Loading current index data from %s", index_file)
         with open(index_file, "r", encoding="utf8") as fp:
-            global __current_index
-            __current_index = json.load(fp)
+            return json.load(fp)
     except Exception as e:
         logger.debug("Could not load sources index. Error: %s", e)
+        return {}
 
 
-def __save_current_index():
+def __save_current_index(current_index):
     index_file = __user_data_path / "sources" / "_index.json"
     os.makedirs(index_file.parent, exist_ok=True)
 
     logger.debug("Saving current index data to %s", index_file)
     with open(index_file, "w", encoding="utf8") as fp:
-        json.dump(__current_index, fp, ensure_ascii=False)
+        json.dump(current_index, fp, ensure_ascii=False)
 
 
-def __load_latest_index():
-    global __latest_index
-    global __current_index
-
-    last_download = __current_index.get("v", 0)
+def __load_latest_index(current_index):
+    latest_index = {}
+    last_download = current_index.get("v", 0)
     if time.time() - last_download < __index_fetch_internval_in_seconds:
         logger.debug("Current index was already downloaded once")
-        __latest_index = __current_index
-        return
+        latest_index = current_index
+        return latest_index, current_index
 
     try:
         data = __download_data(__master_index_file_url)
-        __latest_index = json.loads(data.decode("utf8"))
-        if "crawlers" not in __current_index:
-            __current_index = __latest_index
-        __current_index["v"] = int(time.time())
-        __save_current_index()
+        latest_index = json.loads(data.decode("utf8"))
+        if "crawlers" not in current_index:
+            current_index = latest_index
+        current_index["v"] = int(time.time())
+        __save_current_index(current_index)
     except Exception as e:
-        if "crawlers" not in __current_index:
+        if "crawlers" not in current_index:
             raise LNException("Could not fetch sources index")
         logger.warn("Could not download latest index. Error: %s", e)
-        __latest_index = __current_index
+        latest_index = current_index
+
+    return latest_index, current_index
 
 
 def __check_updates():
-    __load_current_index()
-    __load_latest_index()
+    current_index = __load_current_index()
+    latest_index, current_index = __load_latest_index(current_index)
 
-    latest_app_version = __latest_index["app"]["version"]
-    if version.parse(latest_app_version) > version.parse(get_version()):
-        new_version_news(latest_app_version)
-
-    global __current_index
-    __current_index["app"] = __latest_index["app"]
-    __current_index["supported"] = __latest_index["supported"]
-    __current_index["rejected"] = __latest_index["rejected"]
-    __save_current_index()
+    current_index["app"] = latest_index["app"]
+    current_index["supported"] = latest_index["supported"]
+    current_index["rejected"] = latest_index["rejected"]
+    __save_current_index(current_index)
 
     global rejected_sources
-    rejected_sources = __current_index["rejected"]
+    rejected_sources = current_index["rejected"]
+    return latest_index, current_index
 
 
 # --------------------------------------------------------------------------- #
@@ -164,8 +153,8 @@ def __check_updates():
 # --------------------------------------------------------------------------- #
 
 
-def __save_source_data(source_id, data):
-    latest = __latest_index["crawlers"][source_id]
+def __save_source_data(source_id, data, latest_index, current_index):
+    latest = latest_index["crawlers"][source_id]
     dst_file = __user_data_path / str(latest["file_path"])
     dst_dir = dst_file.parent
     temp_file = dst_dir / ("." + dst_file.name)
@@ -178,9 +167,8 @@ def __save_source_data(source_id, data):
         os.remove(dst_file)
     temp_file.rename(dst_file)
 
-    global __current_index
-    __current_index["crawlers"][source_id] = latest
-    __save_current_index()
+    current_index["crawlers"][source_id] = latest
+    __save_current_index(current_index)
 
     logger.debug("Source update downloaded: %s", dst_file.name)
 
@@ -192,19 +180,19 @@ def __save_source_data(source_id, data):
 #         return hashlib.md5(f.read()).hexdigest()
 
 
-def __download_sources():
+def __download_sources(latest_index, current_index):
     tbd_sids = []
-    for sid in __current_index["crawlers"].keys():
-        if sid not in __latest_index["crawlers"]:
+    for sid in current_index["crawlers"].keys():
+        if sid not in latest_index["crawlers"]:
             tbd_sids.append(sid)
     for sid in tbd_sids:
-        del __current_index["crawlers"][sid]
+        del current_index["crawlers"][sid]
 
-    futures: Dict[str, Future] = {}
-    for sid, latest in __latest_index["crawlers"].items():
-        current = __current_index["crawlers"].get(sid)
+    futures = {}
+    for sid, latest in latest_index["crawlers"].items():
+        current = current_index["crawlers"].get(sid)
         has_new_version = not current or current["version"] < latest["version"]
-        __current_index["crawlers"][sid] = latest
+        current_index["crawlers"][sid] = latest
         user_file = (__user_data_path / str(latest["file_path"])).is_file()
         local_file = (__local_data_path / str(latest["file_path"])).is_file()
         if has_new_version or not (user_file or local_file):
@@ -221,7 +209,7 @@ def __download_sources():
         except Exception:
             continue
         try:
-            __save_source_data(sid, data)
+            __save_source_data(sid, data, latest_index, current_index)
         except Exception as e:
             logger.warn("Failed to save source file. Error: %s", e)
 
@@ -234,8 +222,7 @@ __cache_crawlers = {}
 __url_regex = re.compile(r"^^(https?|ftp)://[^\s/$.?#].[^\s]*$", re.I)
 
 
-def __import_crawlers(file_path: Path) -> List[Type[Crawler]]:
-    global __cache_crawlers
+def __import_crawlers(file_path):
     if file_path in __cache_crawlers:
         return __cache_crawlers[file_path]
 
@@ -260,7 +247,7 @@ def __import_crawlers(file_path: Path) -> List[Type[Crawler]]:
     crawlers = []
     for key in dir(module):
         crawler = getattr(module, key)
-        if type(crawler) != type(Crawler) or not issubclass(crawler, Crawler):
+        if not isinstance(crawler, type) or not issubclass(crawler, Crawler):
             continue
 
         if crawler.__dict__.get("is_template"):
@@ -273,13 +260,19 @@ def __import_crawlers(file_path: Path) -> List[Type[Crawler]]:
         if not urls:
             continue
         for url in urls:
-            assert __url_regex.match(url), f"Invalid base url: {url} @{file_path}"
+            assert __url_regex.match(url), "Invalid base url: {} @{}".format(
+                url, file_path
+            )
 
         for method in ["read_novel_info", "download_chapter_body"]:
             if not hasattr(crawler, method):
-                raise LNException(f"Required method not found: {method} @{file_path}")
+                raise LNException(
+                    "Required method not found: {} @{}".format(method, file_path)
+                )
             if not callable(getattr(crawler, method)):
-                raise LNException(f"Should be callable: {method} @{file_path}")
+                raise LNException(
+                    "Should be callable: {} @{}".format(method, file_path)
+                )
 
         setattr(crawler, "base_url", urls)
         setattr(crawler, "language", language_code)
@@ -291,7 +284,7 @@ def __import_crawlers(file_path: Path) -> List[Type[Crawler]]:
     return crawlers
 
 
-def __add_crawlers_from_path(path: Path):
+def __add_crawlers_from_path(path):
     if path.name.startswith("_") or not path.name[0].isalnum():
         return
 
@@ -304,7 +297,6 @@ def __add_crawlers_from_path(path: Path):
             __add_crawlers_from_path(py_file)
         return
 
-    global crawler_list
     try:
         crawlers = __import_crawlers(path)
         for crawler in crawlers:
@@ -328,15 +320,16 @@ def load_sources():
         or (__local_data_path / ".git" / "HEAD").exists()
     )
 
+    current_index = {}
     if not __is_dev_mode:
-        __check_updates()
-        __download_sources()
-        __save_current_index()
+        latest_index, current_index = __check_updates()
+        __download_sources(latest_index, current_index)
+        __save_current_index(current_index)
 
     __add_crawlers_from_path(__local_data_path / "sources")
 
     if not __is_dev_mode:
-        for _, current in __current_index["crawlers"].items():
+        for _, current in current_index["crawlers"].items():
             source_file = __user_data_path / str(current["file_path"])
             if source_file.is_file():
                 __add_crawlers_from_path(source_file)
@@ -346,7 +339,7 @@ def load_sources():
         __add_crawlers_from_path(Path(crawler_file))
 
 
-def prepare_crawler(url: str) -> Optional[Crawler]:
+def prepare_crawler(url):
     if not url:
         return None
 

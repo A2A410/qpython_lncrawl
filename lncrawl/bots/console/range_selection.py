@@ -32,13 +32,13 @@ def get_range_selection(self, disable_args=False):
         return selections[0]
 
     choices = [
-        f"Everything! ({chapter_count} chapters)",
+        "Everything! ({} chapters)".format(chapter_count),
         "Last 10 chapters",
         "First 10 chapters",
         "Custom range using URL",
         "Custom range using index",
-        f"Select specific volumes ({volume_count} volumes)",
-        f"Select specific chapters ({chapter_count} chapters)",
+        "Select specific volumes ({} volumes)".format(volume_count),
+        "Select specific chapters ({} chapters)".format(chapter_count),
     ]
     if chapter_count <= 20:
         choices.pop(1)

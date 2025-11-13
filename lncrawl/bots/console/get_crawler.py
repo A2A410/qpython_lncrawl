@@ -1,5 +1,4 @@
 import re
-from typing import List
 
 from questionary import prompt
 
@@ -40,7 +39,7 @@ def get_novel_url(self):
         raise LNException("Novel page url or query was not given")
 
 
-def confirm_guessed_novel(self, guessed_title: str):
+def confirm_guessed_novel(self, guessed_title):
     """Returns a novel page url from a novelupdates query"""
     args = get_args()
     if args.suppress:
@@ -60,7 +59,7 @@ def confirm_guessed_novel(self, guessed_title: str):
     return answer["novel"].strip()
 
 
-def get_crawlers_to_search(self, links: List[str]) -> List[str]:
+def get_crawlers_to_search(self, links):
     """Returns user choice to search the choosen sites for a novel"""
     if not links:
         return []
@@ -136,7 +135,7 @@ def choose_a_novel(self):
     return selected_novel["url"]
 
 
-def confirm_retry(self) -> bool:
+def confirm_retry(self):
     """Returns whether to retry on failure"""
     args = get_args()
 

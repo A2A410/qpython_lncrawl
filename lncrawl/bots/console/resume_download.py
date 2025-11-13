@@ -1,7 +1,6 @@
 import json
 import logging
 from pathlib import Path
-from typing import List
 
 from box import Box
 from questionary import prompt
@@ -13,7 +12,6 @@ from ...core.arguments import get_args
 from ...core.crawler import Crawler
 from ...core.exeptions import LNException
 from ...core.sources import prepare_crawler
-from ...models import MetaInfo
 from .open_folder_prompt import display_open_folder
 
 logger = logging.getLogger(__name__)
@@ -23,18 +21,18 @@ def resume_session():
     args = get_args()
     output_path = args.resume or C.DEFAULT_OUTPUT_PATH
 
-    resumable_meta_data: List[MetaInfo] = []
+    resumable_meta_data = []
     for meta_file in Path(output_path).glob("**/" + C.META_FILE_NAME):
         try:
             with open(meta_file, "r", encoding="utf-8") as fp:
                 data = json.load(fp)
-                meta: MetaInfo = Box(**data)
+                meta = Box(**data)
             if meta.novel and meta.session and not meta.session.completed:
                 resumable_meta_data.append(meta)
         except Exception as e:
             logger.debug("Failed to read file %s | %s", meta_file, e)
 
-    meta: MetaInfo = None
+    meta = None
     if len(resumable_meta_data) == 1:
         meta = resumable_meta_data[0]
     elif len(resumable_meta_data) > 1:
@@ -77,7 +75,7 @@ def resume_session():
     display_open_folder(app.output_path)
 
 
-def load_session_from_metadata(meta: MetaInfo) -> App:
+def load_session_from_metadata(meta):
     app = App()
     assert meta.novel, "MetaInfo Novel is empty"
     assert meta.session, "MetaInfo Session is empty"

@@ -1,27 +1,23 @@
-from typing import Dict, List, Optional, Tuple
-
 from box import Box
-
-from .formats import OutputFormat
 
 
 class Session(Box):
     def __init__(
         self,
-        user_input: str = "",
-        output_path: str = "",
-        completed: bool = False,
-        pack_by_volume: bool = False,
-        download_chapters: List[int] = [],
-        good_file_name: Optional[str] = None,
-        no_append_after_filename: bool = False,
-        login_data: Optional[Tuple[str, str]] = None,
-        output_formats: Dict[OutputFormat, bool] = dict(),
-        headers: Dict[str, str] = dict(),
-        cookies: Dict[str, str] = dict(),
-        proxies: Dict[str, str] = dict(),
+        user_input="",
+        output_path="",
+        completed=False,
+        pack_by_volume=False,
+        download_chapters=[],
+        good_file_name=None,
+        no_append_after_filename=False,
+        login_data=None,
+        output_formats=dict(),
+        headers=dict(),
+        cookies=dict(),
+        proxies=dict(),
         **kwargs,
-    ) -> None:
+    ):
         self.user_input = user_input
         self.output_path = output_path
         self.completed = completed

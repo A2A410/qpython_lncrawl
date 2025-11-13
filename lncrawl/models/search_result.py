@@ -1,16 +1,14 @@
-from typing import List
-
 from box import Box
 
 
 class SearchResult(Box):
     def __init__(
         self,
-        title: str,
-        url: str,
-        info: str = "",
+        title,
+        url,
+        info="",
         **kwargs,
-    ) -> None:
+    ):
         self.title = title
         self.url = url
         self.info = info
@@ -20,11 +18,11 @@ class SearchResult(Box):
 class CombinedSearchResult(Box):
     def __init__(
         self,
-        id: str,
-        title: str,
-        novels: List[SearchResult] = [],
+        id,
+        title,
+        novels=[],
         **kwargs,
-    ) -> None:
+    ):
         self.id = id
         self.title = title
         self.novels = novels

@@ -1,18 +1,16 @@
-from typing import Optional
-
 from box import Box
 
 
 class Volume(Box):
     def __init__(
         self,
-        id: int,
-        title: str = "",
-        start_chapter: Optional[int] = None,
-        final_chapter: Optional[int] = None,
-        chapter_count: Optional[int] = None,
+        id,
+        title="",
+        start_chapter=None,
+        final_chapter=None,
+        chapter_count=None,
         **kwargs,
-    ) -> None:
+    ):
         self.id = id
         self.title = title
         self.start_chapter = start_chapter

@@ -48,7 +48,7 @@ class Eight88NovelCrawler(Crawler):
                         "title": a.get("title"),
                         "url": a.get("href").strip(),
                         "info": self.cleaner.clean_text(
-                            "Author{} : {}".format(
+                            "Author{}: {}".format(
                                 "s" if len(author) > 1 else "", ", ".join(author)
                             )
                         ),

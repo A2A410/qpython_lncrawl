@@ -1,21 +1,19 @@
-from typing import Dict, Optional
-
 from box import Box
 
 
 class Chapter(Box):
     def __init__(
         self,
-        id: int,
-        url: str = "",
-        title: str = "",
-        volume: Optional[int] = None,
-        volume_title: Optional[str] = None,
-        body: Optional[str] = None,
-        images: Dict[str, str] = dict(),
-        success: bool = False,
+        id,
+        url="",
+        title="",
+        volume=None,
+        volume_title=None,
+        body=None,
+        images=dict(),
+        success=False,
         **kwargs,
-    ) -> None:
+    ):
         self.id = id
         self.url = url
         self.title = title
@@ -27,7 +25,7 @@ class Chapter(Box):
         self.update(kwargs)
 
     @staticmethod
-    def without_body(item: "Chapter") -> "Chapter":
+    def without_body(item):
         result = item.copy()
         result.body = None
         return result

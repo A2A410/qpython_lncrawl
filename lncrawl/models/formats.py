@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class OutputFormat(str, Enum):
+class OutputFormat(Enum):
     json = "json"
     epub = "epub"
     text = "text"

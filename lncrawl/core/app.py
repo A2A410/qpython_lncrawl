@@ -3,7 +3,6 @@ import logging
 import os
 import shutil
 from threading import Thread
-from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from readability import Document
@@ -13,7 +12,6 @@ from .. import constants as C
 from ..binders import available_formats, generate_books
 from ..core.exeptions import LNException
 from ..core.sources import crawler_list, prepare_crawler
-from ..models import Chapter, CombinedSearchResult, OutputFormat
 from .browser import Browser
 from .crawler import Crawler
 from .downloader import fetch_chapter_body, fetch_chapter_images
@@ -29,19 +27,19 @@ class App:
     """Bots are based on top of an instance of this app"""
 
     def __init__(self):
-        self.progress: float = 0
-        self.user_input: Optional[str] = None
-        self.crawler_links: List[str] = []
-        self.crawler: Optional[Crawler] = None
-        self.login_data: Optional[Tuple[str, str]] = None
-        self.search_results: List[CombinedSearchResult] = []
+        self.progress = 0
+        self.user_input = None
+        self.crawler_links = []
+        self.crawler = None
+        self.login_data = None
+        self.search_results = []
         self.output_path = C.DEFAULT_OUTPUT_PATH
         self.pack_by_volume = False
-        self.chapters: List[Chapter] = []
-        self.book_cover: Optional[str] = None
-        self.output_formats: Dict[OutputFormat, bool] = {}
+        self.chapters = []
+        self.book_cover = None
+        self.output_formats = {}
         self.archived_outputs = None
-        self.good_file_name: str = ""
+        self.good_file_name = ""
         self.no_suffix_after_filename = False
         atexit.register(self.destroy)
 
@@ -81,7 +79,7 @@ class App:
                 if crawler.search_novel != Crawler.search_novel
             ]
 
-    def guess_novel_title(self, url: str) -> str:
+    def guess_novel_title(self, url):
         try:
             scraper = Scraper(url)
             response = scraper.get_response(url)

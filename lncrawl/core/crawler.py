@@ -1,9 +1,7 @@
 import hashlib
 import logging
 from abc import abstractmethod
-from typing import Generator, List, Optional
 
-from ..models import Chapter, SearchResult, Volume
 from .cleaner import TextCleaner
 from .scraper import Scraper
 
@@ -15,7 +13,7 @@ class Crawler(Scraper):
 
     has_manga = False
     has_mtl = False
-    base_url: List[str]
+    base_url = []
     language = ""
 
     # ------------------------------------------------------------------------- #
@@ -23,9 +21,9 @@ class Crawler(Scraper):
     # ------------------------------------------------------------------------- #
     def __init__(
         self,
-        workers: Optional[int] = None,
-        parser: Optional[str] = None,
-    ) -> None:
+        workers=None,
+        parser=None,
+    ):
         """
         Creates a standalone Crawler instance.
 
@@ -50,7 +48,7 @@ class Crawler(Scraper):
         # Each item must contain these keys:
         # `id` - 1 based index of the volume
         # `title` - the volume title (can be ignored)
-        self.volumes: List[Volume] = []
+        self.volumes = []
 
         # Each item must contain these keys:
         # `id` - 1 based index of the chapter
@@ -58,46 +56,46 @@ class Crawler(Scraper):
         # `volume` - the volume id of this chapter
         # `volume_title` - the volume title (can be ignored)
         # `url` - the link where to download the chapter
-        self.chapters: List[Chapter] = []
+        self.chapters = []
 
         # Initialize superclass
-        super().__init__(
+        super(Crawler, self).__init__(
             origin=self.base_url[0],
             workers=workers,
             parser=parser,
         )
 
-    def __del__(self) -> None:
+    def __del__(self):
         # if hasattr(self, "volumes"):
         #     self.volumes.clear()
         # if hasattr(self, "chapters"):
         #     self.chapters.clear()
-        super().__del__()
+        super(Crawler, self).__del__()
 
     # ------------------------------------------------------------------------- #
     # Methods to implement in crawler
     # ------------------------------------------------------------------------- #
 
-    def initialize(self) -> None:
+    def initialize(self):
         pass
 
-    def login(self, email: str, password: str) -> None:
+    def login(self, email, password):
         pass
 
-    def logout(self) -> None:
+    def logout(self):
         pass
 
-    def search_novel(self, query: str) -> List[SearchResult]:
+    def search_novel(self, query):
         """Gets a list of results matching the given query"""
         raise NotImplementedError()
 
     @abstractmethod
-    def read_novel_info(self) -> None:
+    def read_novel_info(self):
         """Get novel title, author, cover, volumes and chapters"""
         raise NotImplementedError()
 
     @abstractmethod
-    def download_chapter_body(self, chapter: Chapter) -> str:
+    def download_chapter_body(self, chapter):
         """Download body of a single chapter and return as clean html format."""
         raise NotImplementedError()
 
@@ -105,7 +103,7 @@ class Crawler(Scraper):
     # Utility methods that can be overriden
     # ------------------------------------------------------------------------- #
 
-    def index_of_chapter(self, url: str) -> int:
+    def index_of_chapter(self, url):
         """Return the index of chapter by given url or 0"""
         url = self.absolute_url(url)
         for chapter in self.chapters:
@@ -113,7 +111,7 @@ class Crawler(Scraper):
                 return chapter.id
         return 0
 
-    def extract_chapter_images(self, chapter: Chapter) -> None:
+    def extract_chapter_images(self, chapter):
         if not chapter.body:
             return
 
@@ -132,9 +130,9 @@ class Crawler(Scraper):
 
     def download_chapters(
         self,
-        chapters: List[Chapter],
+        chapters,
         fail_fast=False,
-    ) -> Generator[int, None, None]:
+    ):
         futures = {
             index: self.executor.submit(self.download_chapter_body, chapter)
             for index, chapter in enumerate(chapters)

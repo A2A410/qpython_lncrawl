@@ -1,14 +1,11 @@
 import logging
-from typing import Optional
-
-from ...core.app import App
 
 
 class ConsoleBot:
     log = logging.getLogger(__name__)
 
-    def __init__(self) -> None:
-        self.app: Optional[App] = None
+    def __init__(self):
+        self.app = None
         self.search_mode = False
 
     from .get_crawler import (
